@@ -128,8 +128,9 @@ header { display: flex; align-items: center; justify-content: center; }
   background: linear-gradient(160deg, var(--surface-2), var(--surface));
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  padding: 22px 18px;
-  display: flex; flex-direction: column; gap: 18px;
+  padding: 18px 18px;
+  display: flex; flex-direction: column; 
+  gap: 12px;
 }
 .label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); text-align: center; }
 
@@ -207,7 +208,12 @@ header { display: flex; align-items: center; justify-content: center; }
 .unit-suffix { font-weight: 700; color: var(--muted); font-size: 14px; padding-bottom: 22px; white-space: nowrap; }
 .hint { text-align: center; font-size: 13px; color: var(--muted); margin-top: -6px; min-height: 18px; font-variant-numeric: tabular-nums; }
 
-.presets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.presets { 
+  display: grid; 
+  grid-template-columns: repeat(5, 1fr); 
+  gap: 6px; 
+  margin-top: -24px; /* Pulls preset buttons closer to the number input box above */
+}
 .presets button {
   appearance: none; background: transparent; border: 1px solid var(--line); color: var(--fg);
   border-radius: 12px; padding: 10px 0; font: 700 14px var(--font-body); cursor: pointer;
@@ -225,10 +231,19 @@ header { display: flex; align-items: center; justify-content: center; }
 }
 
 .cta {
-  appearance: none; border: 0; cursor: pointer;
-  background: var(--lime); color: var(--lime-ink);
-  font: 800 16px var(--font-body); padding: 18px; border-radius: 999px;
-  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-top: 6px; /* Adds extra spacing specifically above the Calculate button */
+  appearance: none; 
+  border: 0; 
+  cursor: pointer;
+  background: var(--lime); 
+  color: var(--lime-ink);
+  font: 800 16px var(--font-body); 
+  padding: 18px; 
+  border-radius: 999px;
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 8px;
   box-shadow: 0 10px 30px -10px rgba(214,255,61,.45);
   transition: transform .1s;
 }
@@ -238,8 +253,9 @@ button:focus-visible { outline: 2px solid var(--lime); outline-offset: 3px; }
 
 /* Result */
 .result {
+  margin-top: -12px; /* Adjust this value to bring it closer (e.g., -12px, -14px) */
   position: relative; overflow: hidden;
-  border-radius: var(--r-lg); padding: 22px 20px 20px;
+  border-radius: var(--r-lg); padding: 18px 20px 0px;
   background: radial-gradient(120% 90% at 100% 0%, #3a4712 0%, transparent 55%), var(--surface);
   border: 1px solid var(--line);
   display: flex; flex-direction: column; gap: 16px;
@@ -313,12 +329,12 @@ footer { text-align: center; font-size: 12px; color: var(--muted); line-height: 
       <div class="unit-select">
         <button type="button" id="unit-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Pace unit">Pace per mile</button>
         <ul id="unit-menu" role="listbox" aria-label="Pace unit" hidden>
-          <li role="option" tabindex="-1" data-value="mi">Pace per mile</li>
-          <li role="option" tabindex="-1" data-value="km">Pace per km</li>
+          <li role="option" tabindex="-1" data-value="mi">Unit: mile</li>
+          <li role="option" tabindex="-1" data-value="km">Unit: km</li>
         </ul>
         <select id="unit-select" aria-hidden="true" tabindex="-1" hidden>
-          <option value="mi">Pace per mile</option>
-          <option value="km">Pace per km</option>
+          <option value="mi">Unit: mile</option>
+          <option value="km">Unit: km</option>
         </select>
       </div>
     </div>
@@ -342,12 +358,12 @@ footer { text-align: center; font-size: 12px; color: var(--muted); line-height: 
 
   <div class="track" id="track-wrap" aria-label="Lap view">
     <svg id="track-svg" viewBox="0 0 340 196" role="img" aria-label="400 metre track with a runner moving at your split pace"></svg>
-    <div class="track-foot"><span>Lane 1 · runner at 10× speed</span><span>Lap <b id="lap-count">1</b></span></div>
+    <div class="track-foot" style="visibility: hidden;"><span></span><span>Lap <b id="lap-count">1</b></span></div>
   </div>
 
   <section class="result" id="result" aria-live="polite"></section>
 
-  <footer>400 m = 0.4 km = 0.248548 mi. All math runs on your phone.</footer>
+<!--  <footer>400 m = 0.4 km = 0.248548 mi.</footer>-->
 </div>
     </div>
     <div class="homebar" aria-hidden="true"></div>
@@ -477,7 +493,7 @@ footer { text-align: center; font-size: 12px; color: var(--muted); line-height: 
 
   function renderHint() {
     const t = currentTotal();
-    $("hint").textContent = state.mode === "split" && t ? "= " + mmss(t) + " per lap" : "";
+//    $("hint").textContent = state.mode === "split" && t ? "= " + mmss(t) + " per lap" : "";
   }
 
   function lapGraphic() {
@@ -491,24 +507,14 @@ footer { text-align: center; font-size: 12px; color: var(--muted); line-height: 
       const primary = state.unit, other = primary === "mi" ? "km" : "mi";
       el.innerHTML =
         '<div class="result-top"><span class="result-kicker">Equivalent pace</span><span class="result-badge">' + mmss(r.split) + ' / 400m</span></div>' +
-        '<div class="big"><span class="big-num">' + mmss(r.pace[primary]) + '</span><span class="big-unit">min / ' + UNIT_LABEL[primary] + '</span></div>' +
-        '<div class="stats">' +
-          '<div class="stat"><span>Per ' + UNIT_LABEL[other] + '</span><b>' + mmss(r.pace[other]) + '</b></div>' +
-          '<div class="stat"><span>Per lap</span><b>' + Math.round(r.split * 10) / 10 + ' sec</b></div>' +
-        '</div>' +
+        '<div class="big"><span class="big-num">' + mmss(r.pace[primary]) + '</span><span class="big-unit">min / ' + UNIT_LABEL[primary] + '</span></div>';
         '<div class="lap"><p>Run each 400m in <b>' + mmss(r.split) + '</b> to hold <b>' + mmss(r.pace.mi) + '/mi</b> or <b>' + mmss(r.pace.km) + '/km</b>.</p></div>';
-    } else {
-      const secs = Math.round(r.split);
-      el.innerHTML =
+  } else {
+    const secs = Math.round(r.split);
+    el.innerHTML =
         '<div class="result-top"><span class="result-kicker">Every 400m</span><span class="result-badge">' + mmss(r.pace) + ' / ' + UNIT_LABEL[r.unit] + '</span></div>' +
-        '<div class="big"><span class="big-num">' + secs + '</span><span class="big-unit">sec</span></div>' +
-        '<div class="result-sub">That is ' + mmss(r.split) + ' per lap (' + r.split.toFixed(1) + ' s exact).</div>' +
-        '<div class="stats">' +
-          '<div class="stat"><span>200m</span><b>' + mmss(r.split / 2) + '</b></div>' +
-          '<div class="stat"><span>800m</span><b>' + mmss(r.split * 2) + '</b></div>' +
-        '</div>' +
-        '<div class="lap"><p>Target pace <b>' + mmss(r.pace) + ' min / ' + UNIT_LABEL[r.unit] + '</b>.</p></div>';
-    }
+        '<div class="big"><span class="big-num">' + secs + '</span><span class="big-unit">sec</span></div>';
+  }
     el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
   }
 
