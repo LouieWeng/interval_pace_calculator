@@ -1,0 +1,747 @@
+<title>Pacer Pro</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: one phone-width column — logo, mode switch, input card, presets, action, result panel */
+:root {
+  --bg: #0c0e08;
+  --bg-glow: #2a3310;
+  --surface: #181b12;
+  --surface-2: #23271a;
+  --line: #343a26;
+  --fg: #f2f5e8;
+  --muted: #9aa088;
+  --lime: #d6ff3d;
+  --lime-ink: #141a02;
+  --error: #ff7a6b;
+  --font-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r-lg: 28px;
+  --r-md: 18px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { min-height: 100%; }
+body {
+  background: radial-gradient(90% 70% at 50% 30%, #3a3f33 0%, #1c1f18 55%, #121410 100%);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+/* Stage that centers the device */
+.stage {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding-block: 32px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+/* iPhone frame: titanium rim, black bezel, side buttons */
+.phone {
+  position: relative;
+  width: 414px;
+  flex: none;
+  padding: 12px;
+  border-radius: 59px;
+  background: linear-gradient(145deg, #5b5e57 0%, #2b2d29 30%, #1a1b18 60%, #4a4d46 100%);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255,255,255,.18),
+    inset 0 0 0 4px #0a0a09,
+    0 40px 80px -20px rgba(0,0,0,.7),
+    0 0 0 1px rgba(0,0,0,.6);
+}
+.btn { position: absolute; width: 4px; border-radius: 2px; background: linear-gradient(90deg, #2a2c27, #5a5d55); }
+.btn.action { left: -3px; top: 150px; height: 32px; }
+.btn.vol-up { left: -3px; top: 210px; height: 62px; }
+.btn.vol-down { left: -3px; top: 285px; height: 62px; }
+.btn.power { right: -3px; top: 240px; height: 98px; background: linear-gradient(270deg, #2a2c27, #5a5d55); }
+.screen {
+  position: relative;
+  width: 390px;
+  height: 844px;
+  border-radius: 47px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 60% at 20% -10%, var(--bg-glow) 0%, transparent 60%),
+    radial-gradient(80% 50% at 110% 110%, #1d240a 0%, transparent 60%),
+    var(--bg);
+}
+.scroller { position: absolute; inset: 0; overflow-y: auto; scrollbar-width: none; }
+.scroller::-webkit-scrollbar { display: none; }
+.statusbar {
+  position: sticky; top: 0; z-index: 5;
+  height: 54px; padding: 0 30px 0 36px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(var(--bg) 60%, transparent);
+  font: 600 16px/1 -apple-system, "SF Pro Text", var(--font-body);
+}
+.statusbar .icons { display: flex; gap: 6px; align-items: center; }
+.statusbar svg { height: 12px; fill: var(--fg); }
+.island {
+  position: absolute; top: 11px; left: 50%; transform: translateX(-50%); z-index: 6;
+  width: 124px; height: 36px; border-radius: 20px; background: #000;
+}
+.homebar {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 6;
+  width: 136px; height: 5px; border-radius: 3px; background: var(--fg); opacity: .9;
+}
+.app {
+  padding: 8px 18px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.stage { overflow: hidden; }
+header { display: flex; align-items: center; justify-content: center; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-mark {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--lime); color: var(--lime-ink);
+  display: grid; place-items: center;
+}
+.logo-mark svg { width: 20px; height: 20px; }
+.logo-text { font-family: var(--font-display); font-weight: 600; font-size: 17px; letter-spacing: -0.01em; }
+.logo-text em { font-style: normal; color: var(--lime); }
+.track-tag {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px;
+}
+
+/* Segmented mode switch */
+.seg {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 999px; padding: 5px; position: relative;
+}
+.seg button {
+  appearance: none; border: 0; background: transparent; color: var(--muted);
+  font: 700 15px var(--font-body); padding: 12px 8px; border-radius: 999px; cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.seg button small { display: block; font-size: 11px; font-weight: 600; opacity: .75; margin-top: 2px; }
+.seg button[aria-selected="true"] { background: var(--lime); color: var(--lime-ink); }
+
+.card {
+  background: linear-gradient(160deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 22px 18px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); text-align: center; }
+
+/* Unit toggle */
+.unit-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 0 4px 0 8px; }
+.unit-row .label { text-align: left; }
+#entry-label { text-align: left; padding-left: 2px; }
+.card-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.unit-select { position: relative; display: inline-flex; }
+.unit-select { z-index: 20; }
+#unit-btn {
+  appearance: none; -webkit-appearance: none;
+  font: 700 11px var(--font-body); color: var(--lime);
+  background: transparent; border: 1px solid rgba(214,255,61,.35); border-radius: 999px;
+  padding: 5px 26px 5px 10px; cursor: pointer;
+}
+#unit-btn:hover, #unit-btn[aria-expanded="true"] { border-color: var(--lime); }
+#unit-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; min-width: 210px;
+  margin: 0; padding: 6px; list-style: none;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 18px;
+  box-shadow: 0 18px 40px -12px rgba(0,0,0,.7);
+  animation: menu-in .14s ease-out;
+}
+@keyframes menu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+#unit-menu li {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  font: 600 16px var(--font-body); color: var(--fg);
+  padding: 14px 14px; border-radius: 12px; cursor: pointer; outline: none;
+}
+#unit-menu li:hover, #unit-menu li:focus { background: rgba(214,255,61,.08); }
+#unit-menu li[aria-selected="true"] { color: var(--lime); }
+#unit-menu li[aria-selected="true"]::after {
+  content: ""; width: 12px; height: 6px; margin-top: -3px;
+  border-left: 2px solid var(--lime); border-bottom: 2px solid var(--lime); transform: rotate(-45deg);
+}
+.unit-select::after {
+  content: ""; position: absolute; right: 10px; top: 13px; width: 6px; height: 6px; pointer-events: none;
+  border-right: 1.6px solid var(--lime); border-bottom: 1.6px solid var(--lime);
+  transform: translateY(-70%) rotate(45deg);
+}
+.chips { display: inline-flex; gap: 6px; background: var(--bg); border-radius: 999px; padding: 4px; border: 1px solid var(--line); }
+.chips label { position: relative; cursor: pointer; }
+.chips input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.chips span {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: 14px; color: var(--muted);
+  transition: background .2s, color .2s;
+}
+.chips span::before {
+  content: ""; width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid currentColor; box-sizing: border-box;
+}
+.chips input:checked + span { background: var(--surface-2); color: var(--fg); }
+.chips input:checked + span::before { border-color: var(--lime); background: radial-gradient(circle, var(--lime) 0 3px, transparent 3.5px); }
+.chips input:focus-visible + span { outline: 2px solid var(--lime); outline-offset: 2px; }
+
+/* Time entry */
+.time { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.field { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.field input {
+  width: 96px; height: 76px; text-align: center;
+  font: 600 36px var(--font-display); font-variant-numeric: tabular-nums;
+  color: var(--fg); background: var(--bg); border: 1.5px solid var(--line); border-radius: var(--r-md);
+  outline: none; transition: border-color .15s, box-shadow .15s;
+  -moz-appearance: textfield;
+}
+.field input::-webkit-outer-spin-button, .field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.field input:focus { border-color: var(--lime); box-shadow: 0 0 0 4px rgba(214,255,61,.14); }
+.field input[aria-invalid="true"] { border-color: var(--error); }
+.field small { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.colon { font: 600 32px var(--font-display); color: var(--muted); padding-bottom: 22px; }
+.time.split-mode #in-sec { width: 130px; }
+.time.split-mode .unit-suffix { padding-bottom: 0; }
+.unit-suffix { font-weight: 700; color: var(--muted); font-size: 14px; padding-bottom: 22px; white-space: nowrap; }
+.hint { text-align: center; font-size: 13px; color: var(--muted); margin-top: -6px; min-height: 18px; font-variant-numeric: tabular-nums; }
+
+.presets { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.presets button {
+  appearance: none; background: transparent; border: 1px solid var(--line); color: var(--fg);
+  border-radius: 12px; padding: 10px 0; font: 700 14px var(--font-body); cursor: pointer;
+  font-variant-numeric: tabular-nums; transition: background .15s, border-color .15s, color .15s;
+}
+.presets button:hover { border-color: var(--muted); }
+.presets button.on { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); }
+.presets-label { font-size: 11px; color: var(--muted); text-align: center; margin-top: -10px; }
+
+.error {
+  display: flex; gap: 8px; align-items: flex-start;
+  color: var(--error); font-size: 14px; font-weight: 600;
+  background: rgba(255,122,107,.08); border: 1px solid rgba(255,122,107,.3);
+  border-radius: 12px; padding: 10px 12px;
+}
+
+.cta {
+  appearance: none; border: 0; cursor: pointer;
+  background: var(--lime); color: var(--lime-ink);
+  font: 800 16px var(--font-body); padding: 18px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  box-shadow: 0 10px 30px -10px rgba(214,255,61,.45);
+  transition: transform .1s;
+}
+.cta:active { transform: scale(.98); }
+.cta svg { width: 18px; height: 18px; }
+button:focus-visible { outline: 2px solid var(--lime); outline-offset: 3px; }
+
+/* Result */
+.result {
+  position: relative; overflow: hidden;
+  border-radius: var(--r-lg); padding: 22px 20px 20px;
+  background: radial-gradient(120% 90% at 100% 0%, #3a4712 0%, transparent 55%), var(--surface);
+  border: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.result-top { display: flex; justify-content: space-between; align-items: center; }
+.result-kicker { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.result-badge { font-size: 11px; font-weight: 700; color: var(--lime); border: 1px solid rgba(214,255,61,.35); padding: 5px 10px; border-radius: 999px; }
+.big { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.big-num { font: 700 56px/1 var(--font-display); color: var(--lime); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.big-unit { font-weight: 700; color: var(--fg); font-size: 16px; }
+.result-sub { color: var(--muted); font-size: 14px; margin-top: -6px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { padding: 0; }
+.stat b { display: block; font: 600 20px var(--font-display); font-variant-numeric: tabular-nums; margin-top: 4px; }
+.stat span { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+/* Lap track graphic */
+.lap { display: flex; align-items: center; gap: 10px; }
+.lap svg { width: 46px; height: 28px; flex: none; }
+.lap p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.lap p b { color: var(--fg); }
+
+.result.flash .big-num { animation: pop .35s ease-out; }
+@keyframes pop { from { transform: translateY(6px); opacity: .3; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Track view */
+.track {
+  padding: 4px 0 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.track svg { width: 100%; height: auto; display: block; overflow: visible; }
+.track-foot { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--muted); }
+.track-foot b { color: var(--fg); font-variant-numeric: tabular-nums; }
+.t-time { font: 700 30px var(--font-display); fill: var(--fg); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.t-cap { font: 700 8.5px var(--font-body); fill: var(--muted); letter-spacing: .14em; }
+.t-mark { font: 700 8px var(--font-body); fill: var(--muted); }
+
+footer { text-align: center; font-size: 12px; color: var(--muted); line-height: 1.5; }
+</style>
+
+<div class="stage">
+<div class="phone">
+  <span class="btn action"></span><span class="btn vol-up"></span><span class="btn vol-down"></span><span class="btn power"></span>
+  <div class="screen">
+    <div class="island" aria-hidden="true"></div>
+    <div class="scroller">
+      <div class="statusbar" aria-hidden="true">
+        <span>9:41</span>
+        <span class="icons">
+          <svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg viewBox="0 0 16 12"><path d="M8 2.2c2.4 0 4.6.9 6.2 2.4l1.3-1.4A10.8 10.8 0 0 0 8 .2 10.8 10.8 0 0 0 .5 3.2l1.3 1.4A8.8 8.8 0 0 1 8 2.2Zm0 3.6c1.4 0 2.7.5 3.7 1.4l1.3-1.4A7.4 7.4 0 0 0 8 3.9 7.4 7.4 0 0 0 3 5.8l1.3 1.4c1-.9 2.3-1.4 3.7-1.4Zm0 3.5c-.6 0-1.1.2-1.5.6L8 11.5l1.5-1.6c-.4-.4-.9-.6-1.5-.6Z"/></svg>
+          <svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="23" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="18" height="8" rx="2"/><rect x="24.5" y="4" width="2" height="4" rx="1" opacity=".45"/></svg>
+        </span>
+      </div>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-text">Pacer <em>Pro</em></div>
+    </div>
+  </header>
+
+  <div class="seg" role="tablist" aria-label="Conversion mode">
+    <button role="tab" id="tab-split" aria-selected="true" data-mode="split">Split → Pace</button>
+    <button role="tab" id="tab-pace" aria-selected="false" data-mode="pace">Pace → Split</button>
+  </div>
+
+  <form class="card" id="form" novalidate>
+    <div class="card-top">
+      <div class="label" id="entry-label">Split time</div>
+      <div class="unit-select">
+        <button type="button" id="unit-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Pace unit">Pace per mile</button>
+        <ul id="unit-menu" role="listbox" aria-label="Pace unit" hidden>
+          <li role="option" tabindex="-1" data-value="mi">Pace per mile</li>
+          <li role="option" tabindex="-1" data-value="km">Pace per km</li>
+        </ul>
+        <select id="unit-select" aria-hidden="true" tabindex="-1" hidden>
+          <option value="mi">Pace per mile</option>
+          <option value="km">Pace per km</option>
+        </select>
+      </div>
+    </div>
+    <div class="time">
+      <div class="field" id="f-min"><input id="in-min" inputmode="numeric" type="text" autocomplete="off" aria-label="Minutes"><small>min</small></div>
+      <div class="colon" id="colon">:</div>
+      <div class="field"><input id="in-sec" inputmode="decimal" type="text" autocomplete="off" aria-label="Seconds"><small id="sec-label">sec</small></div>
+      <div class="unit-suffix" id="suffix">/ 400m</div>
+    </div>
+    <div class="hint" id="hint"></div>
+
+    <div class="presets" id="presets"></div>
+    <div class="presets-label" id="presets-label">Tap a preset to calculate instantly</div>
+
+    <div class="error" id="error" hidden role="alert"></div>
+
+    <button class="cta" type="submit" id="cta">
+      <span id="cta-text">Calculate Pace</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+    </button>
+  </form>
+
+  <div class="track" id="track-wrap" aria-label="Lap view">
+    <svg id="track-svg" viewBox="0 0 340 196" role="img" aria-label="400 metre track with a runner moving at your split pace"></svg>
+    <div class="track-foot"><span>Lane 1 · runner at 10× speed</span><span>Lap <b id="lap-count">1</b></span></div>
+  </div>
+
+  <section class="result" id="result" aria-live="polite"></section>
+
+  <footer>400 m = 0.4 km = 0.248548 mi. All math runs on your phone.</footer>
+</div>
+    </div>
+    <div class="homebar" aria-hidden="true"></div>
+  </div>
+</div>
+</div>
+
+<script>
+(function () {
+  const MI = 0.248548, KM = 0.4;
+  const FACTOR = { mi: MI, km: KM };
+  const UNIT_LABEL = { mi: "mile", km: "km" };
+  const SPLIT_PRESETS = [80, 90, 100, 110, 120];
+  const PACE_PRESETS = { mi: [420, 440, 460, 480, 500], km: [240, 260, 280, 300, 320] };
+
+  const $ = (id) => document.getElementById(id);
+  const inMin = $("in-min"), inSec = $("in-sec");
+
+  // Per-mode state so switching tabs keeps each side's entry and result
+  const state = {
+    mode: "split",
+    unit: "mi",
+    split: { min: "0", sec: "90", result: null },
+    pace:  { min: "8", sec: "30", result: null }
+  };
+  try {
+    const saved = JSON.parse(localStorage.getItem("pacerpro") || "null");
+    if (saved) {
+      if (saved.mode === "split" || saved.mode === "pace") state.mode = saved.mode;
+      if (saved.unit === "mi" || saved.unit === "km") state.unit = saved.unit;
+    }
+  } catch (e) {}
+  const save = () => { try { localStorage.setItem("pacerpro", JSON.stringify({ mode: state.mode, unit: state.unit })); } catch (e) {} };
+
+  // ---- formatting ----
+  function mmss(totalSec) {
+    let s = Math.round(totalSec);
+    const m = Math.floor(s / 60);
+    s = s - m * 60;
+    return m + ":" + String(s).padStart(2, "0");
+  }
+
+  // ---- validation ----
+  function readTime(kind) {
+    if (kind === "split") {
+      const raw = inSec.value.trim();
+      if (raw === "") return { error: "Enter the 400m split in seconds, for example 90.", field: inSec };
+      if (/^-/.test(raw)) return { error: "The split can't be negative.", field: inSec };
+      if (!/^\d+(\.\d+)?$/.test(raw)) return { error: "The split must be a number of seconds, for example 90 or 87.5.", field: inSec };
+      const total = parseFloat(raw);
+      if (total <= 0) return { error: "The split must be greater than zero.", field: inSec };
+      return { total };
+    }
+    const rawM = inMin.value.trim(), rawS = inSec.value.trim();
+    const what = kind === "split" ? "split" : "pace";
+    if (rawM === "" && rawS === "") return { error: "Enter a " + what + " time. Fill in minutes and seconds (use 0 for none)." };
+    if (rawM === "") return { error: "Minutes is empty. Enter 0 if there are no full minutes.", field: inMin };
+    if (rawS === "") return { error: "Seconds is empty. Enter 0 if there are no extra seconds.", field: inSec };
+    for (const [raw, el, name] of [[rawM, inMin, "Minutes"], [rawS, inSec, "Seconds"]]) {
+      if (/^-/.test(raw)) return { error: name + " can't be negative.", field: el };
+      if (!/^\d+(\.\d+)?$/.test(raw)) return { error: name + " must be a number.", field: el };
+    }
+    const m = parseFloat(rawM), s = parseFloat(rawS);
+    if (s >= 60) return { error: "Seconds must be less than 60. Move full minutes into the minutes box.", field: inSec };
+    const total = m * 60 + s;
+    if (total <= 0) return { error: "The " + what + " must be greater than zero." };
+    return { total };
+  }
+
+  // ---- calculations (per spec) ----
+  const splitToPace = (splitSec) => ({ mi: splitSec / MI, km: splitSec / KM });
+  const paceToSplit = (paceSec, unit) => paceSec * FACTOR[unit];
+
+  // ---- rendering ----
+  function renderForm() {
+    const m = state.mode, s = state[m];
+    $("tab-split").setAttribute("aria-selected", m === "split");
+    $("tab-pace").setAttribute("aria-selected", m === "pace");
+    $("unit-select").value = state.unit;
+    syncUnitMenu();
+    inMin.value = s.min; inSec.value = s.sec;
+    $("f-min").hidden = $("colon").hidden = m === "split";
+    document.querySelector(".time").classList.toggle("split-mode", m === "split");
+    $("sec-label").hidden = m === "split";
+    inSec.setAttribute("aria-label", m === "split" ? "Split in total seconds" : "Seconds");
+    $("entry-label").textContent = m === "split" ? "Split time" : "Target pace";
+    $("suffix").textContent = m === "split" ? "sec / 400m" : "/ " + UNIT_LABEL[state.unit];
+    $("cta-text").textContent = m === "split" ? "Calculate Pace" : "Calculate Split";
+    renderPresets();
+    renderHint();
+    clearError();
+  }
+
+  function renderPresets() {
+    const list = state.mode === "split" ? SPLIT_PRESETS : PACE_PRESETS[state.unit];
+    const box = $("presets");
+    box.innerHTML = "";
+    const cur = currentTotal();
+    list.forEach((sec) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = state.mode === "split" ? sec + "s" : mmss(sec);
+      b.setAttribute("aria-label", state.mode === "split" ? sec + " second split" : mmss(sec) + " per " + UNIT_LABEL[state.unit]);
+      if (cur === sec) b.classList.add("on");
+      b.addEventListener("click", () => {
+        if (state.mode === "split") { inSec.value = String(sec); }
+        else {
+          inMin.value = String(Math.floor(sec / 60));
+          inSec.value = String(sec % 60).padStart(2, "0");
+        }
+        syncInputs();
+        calculate();
+      });
+      box.appendChild(b);
+    });
+    $("presets-label").textContent = state.mode === "split"
+      ? "Common 400m splits, in 10-second steps"
+      : "Common paces per " + UNIT_LABEL[state.unit] + ", in 20-second steps";
+  }
+
+  function currentTotal() {
+    if (state.mode === "split") {
+      const v = inSec.value.trim();
+      return /^\d+(\.\d+)?$/.test(v) && +v > 0 ? +v : null;
+    }
+    const m = inMin.value.trim(), s = inSec.value.trim();
+    if (!/^\d+$/.test(m) || !/^\d+$/.test(s) || +s >= 60) return null;
+    return +m * 60 + +s;
+  }
+
+  function renderHint() {
+    const t = currentTotal();
+    $("hint").textContent = state.mode === "split" && t ? "= " + mmss(t) + " per lap" : "";
+  }
+
+  function lapGraphic() {
+    return '<svg viewBox="0 0 46 28" aria-hidden="true"><rect x="2" y="2" width="42" height="24" rx="12" fill="none" stroke="var(--line)" stroke-width="3"/><rect x="2" y="2" width="42" height="24" rx="12" fill="none" stroke="var(--lime)" stroke-width="3" stroke-dasharray="30 200" stroke-linecap="round"/></svg>';
+  }
+
+  function renderResult() {
+    const el = $("result");
+    const r = state[state.mode].result;
+    if (!r) {
+      el.innerHTML = '<div class="result-kicker">Result</div><p class="result-sub" style="margin:0">Enter a time or tap a preset to see your numbers.</p>';
+      return;
+    }
+    if (state.mode === "split") {
+      const primary = state.unit, other = primary === "mi" ? "km" : "mi";
+      el.innerHTML =
+        '<div class="result-top"><span class="result-kicker">Equivalent pace</span><span class="result-badge">' + mmss(r.split) + ' / 400m</span></div>' +
+        '<div class="big"><span class="big-num">' + mmss(r.pace[primary]) + '</span><span class="big-unit">min / ' + UNIT_LABEL[primary] + '</span></div>' +
+        '<div class="stats">' +
+          '<div class="stat"><span>Per ' + UNIT_LABEL[other] + '</span><b>' + mmss(r.pace[other]) + '</b></div>' +
+          '<div class="stat"><span>Per lap</span><b>' + Math.round(r.split * 10) / 10 + ' sec</b></div>' +
+        '</div>' +
+        '<div class="lap"><p>Run each 400m in <b>' + mmss(r.split) + '</b> to hold <b>' + mmss(r.pace.mi) + '/mi</b> or <b>' + mmss(r.pace.km) + '/km</b>.</p></div>';
+    } else {
+      const secs = Math.round(r.split);
+      el.innerHTML =
+        '<div class="result-top"><span class="result-kicker">Every 400m</span><span class="result-badge">' + mmss(r.pace) + ' / ' + UNIT_LABEL[r.unit] + '</span></div>' +
+        '<div class="big"><span class="big-num">' + secs + '</span><span class="big-unit">sec</span></div>' +
+        '<div class="result-sub">That is ' + mmss(r.split) + ' per lap (' + r.split.toFixed(1) + ' s exact).</div>' +
+        '<div class="stats">' +
+          '<div class="stat"><span>200m</span><b>' + mmss(r.split / 2) + '</b></div>' +
+          '<div class="stat"><span>800m</span><b>' + mmss(r.split * 2) + '</b></div>' +
+        '</div>' +
+        '<div class="lap"><p>Target pace <b>' + mmss(r.pace) + ' min / ' + UNIT_LABEL[r.unit] + '</b>.</p></div>';
+    }
+    el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+  }
+
+  function showError(msg, field) {
+    const e = $("error");
+    e.textContent = msg; e.hidden = false;
+    [inMin, inSec].forEach((i) => i.setAttribute("aria-invalid", "false"));
+    if (field) { field.setAttribute("aria-invalid", "true"); field.focus(); }
+    else { inMin.setAttribute("aria-invalid", "true"); inSec.setAttribute("aria-invalid", "true"); }
+  }
+  function clearError() {
+    $("error").hidden = true;
+    [inMin, inSec].forEach((i) => i.setAttribute("aria-invalid", "false"));
+  }
+
+  function syncInputs() {
+    state[state.mode].min = inMin.value;
+    state[state.mode].sec = inSec.value;
+    renderHint();
+    const t = currentTotal();
+    [...$("presets").children].forEach((b, i) => {
+      const list = state.mode === "split" ? SPLIT_PRESETS : PACE_PRESETS[state.unit];
+      b.classList.toggle("on", t === list[i]);
+    });
+  }
+
+  function calculate() {
+    const v = readTime(state.mode);
+    if (v.error) { showError(v.error, v.field); return; }
+    clearError();
+    if (state.mode === "split") {
+      state.split.result = { split: v.total, pace: splitToPace(v.total) };
+    } else {
+      state.pace.result = { pace: v.total, unit: state.unit, split: paceToSplit(v.total, state.unit) };
+    }
+    renderResult();
+  }
+
+  // ---- unit dropdown (custom menu so the open list can be larger) ----
+  function syncUnitMenu() {
+    const sel = $("unit-select");
+    $("unit-btn").textContent = sel.options[sel.selectedIndex].text;
+    document.querySelectorAll("#unit-menu li").forEach((li) => li.setAttribute("aria-selected", li.dataset.value === sel.value));
+  }
+  function openMenu() {
+    $("unit-menu").hidden = false; $("unit-btn").setAttribute("aria-expanded", "true");
+    (document.querySelector('#unit-menu li[aria-selected="true"]') || document.querySelector("#unit-menu li")).focus();
+  }
+  function closeMenu(refocus) {
+    if ($("unit-menu").hidden) return;
+    $("unit-menu").hidden = true; $("unit-btn").setAttribute("aria-expanded", "false");
+    if (refocus) $("unit-btn").focus();
+  }
+  function pickUnit(v) {
+    const sel = $("unit-select");
+    closeMenu(true);
+    if (sel.value === v) return;
+    sel.value = v;
+    sel.dispatchEvent(new Event("change"));
+  }
+  $("unit-btn").addEventListener("click", (e) => { e.stopPropagation(); $("unit-menu").hidden ? openMenu() : closeMenu(true); });
+  document.querySelectorAll("#unit-menu li").forEach((li) => {
+    li.addEventListener("click", (e) => { e.stopPropagation(); pickUnit(li.dataset.value); });
+    li.addEventListener("keydown", (e) => {
+      const items = [...document.querySelectorAll("#unit-menu li")], i = items.indexOf(li);
+      if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
+      else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pickUnit(li.dataset.value); }
+      else if (e.key === "Escape" || e.key === "Tab") { e.preventDefault(); closeMenu(true); }
+    });
+  });
+  document.addEventListener("click", () => closeMenu(false));
+
+  // ---- events ----
+  document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+    state.mode = b.dataset.mode; save(); renderForm(); renderResult();
+  }));
+  $("unit-select").addEventListener("change", () => {
+    const r = $("unit-select");
+    const prev = state.unit;
+    state.unit = r.value; save();
+    if (state.mode === "pace") {
+      // Convert the entered pace into the new unit so the same effort carries over
+      const t = currentTotal();
+      if (t) {
+        const conv = t * FACTOR[prev] / FACTOR[state.unit];
+        const rs = Math.round(conv);
+        state.pace.min = String(Math.floor(rs / 60));
+        state.pace.sec = String(rs % 60).padStart(2, "0");
+      }
+      renderForm();
+      if (state.pace.result) calculate(); else renderResult();
+    } else {
+      renderForm();
+      renderResult();
+    }
+  });
+  [inMin, inSec].forEach((i) => {
+    i.addEventListener("input", () => {
+      clearError();
+      syncInputs();
+      if (i === inMin && /^\d{2}$/.test(i.value) && state.mode === "pace") inSec.focus();
+    });
+    i.addEventListener("focus", () => i.select());
+  });
+  $("form").addEventListener("submit", (e) => { e.preventDefault(); calculate(); inMin.blur(); inSec.blur(); });
+
+  // Open in a working state: both sides pre-calculated from sample entries
+  const startMode = state.mode;
+  state.mode = "pace"; renderForm(); calculate();
+  state.mode = "split"; renderForm(); calculate();
+  state.mode = startMode; renderForm(); renderResult();
+
+  // ---- track view ----
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = $("track-svg");
+  const CX = 170, CY = 98, S = 92, R = 52, LANE = 6, LANES = 6;
+  const stadium = (r) =>
+    "M" + (CX + S) + " " + (CY + r) +
+    " A" + r + " " + r + " 0 0 0 " + (CX + S) + " " + (CY - r) +
+    " L" + (CX - S) + " " + (CY - r) +
+    " A" + r + " " + r + " 0 0 0 " + (CX - S) + " " + (CY + r) +
+    " L" + (CX + S) + " " + (CY + r) + " Z";
+  function el(tag, attrs, parent) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    (parent || svg).appendChild(n);
+    return n;
+  }
+  const inner = R - LANE / 2, outer = inner + LANE * LANES;
+  const defs = el("defs", {});
+  const grad = el("linearGradient", { id: "infield", x1: "0", y1: "0", x2: "1", y2: "1" }, defs);
+  el("stop", { offset: "0", style: "stop-color:#26300f" }, grad);
+  el("stop", { offset: "1", style: "stop-color:#151a09" }, grad);
+  const glow = el("filter", { id: "glow", x: "-50%", y: "-50%", width: "200%", height: "200%" }, defs);
+  el("feGaussianBlur", { stdDeviation: "3" }, glow);
+
+  // Track surface, lane lines, infield
+  el("path", { d: stadium((inner + outer) / 2), style: "fill:none;stroke:#2b3120;stroke-width:" + (outer - inner) });
+  for (let i = 0; i <= LANES; i++) {
+    el("path", { d: stadium(inner + i * LANE), style: "fill:none;stroke:rgba(242,245,232," + (i === 0 || i === LANES ? .22 : .09) + ");stroke-width:.8" });
+  }
+  el("path", { d: stadium(inner - 0.4), style: "fill:url(#infield)" });
+  // Infield mowing stripes, clipped to the infield
+  const clip = el("clipPath", { id: "infield-clip" }, defs);
+  el("path", { d: stadium(inner - 0.4) }, clip);
+  const stripes = el("g", { "clip-path": "url(#infield-clip)" });
+  for (let x = CX - S - R; x < CX + S + R; x += 24) {
+    el("rect", { x: x, y: CY - R, width: 12, height: R * 2, style: "fill:rgba(214,255,61,.035)" }, stripes);
+  }
+  // Start / finish line across all lanes
+  el("line", { x1: CX + S, y1: CY + inner, x2: CX + S, y2: CY + outer, style: "stroke:#f2f5e8;stroke-width:2;opacity:.8" });
+
+  // Lane 1 running line, measured in metres via pathLength
+  const lane = el("path", { d: stadium(R), pathLength: "400", style: "fill:none;stroke:none" });
+  const total = lane.getTotalLength();
+  // 100 / 200 / 300 m markers
+  [100, 200, 300].forEach((m) => {
+    const p = lane.getPointAtLength(total * m / 400);
+    el("circle", { cx: p.x, cy: p.y, r: 1.6, style: "fill:rgba(242,245,232,.5)" });
+    const dx = CX - p.x, dy = CY - p.y, len = Math.hypot(dx, dy) || 1;
+    const lx = p.x + dx / len * 13, ly = p.y + dy / len * 13 + 3;
+    el("text", { x: lx, y: ly, "text-anchor": "middle", class: "t-mark" }).textContent = m + "m";
+  });
+  const sp = lane.getPointAtLength(0);
+  el("text", { x: sp.x, y: CY + outer + 12, "text-anchor": "middle", class: "t-mark" }).textContent = "START";
+
+  // Progress trail + runner
+  const trail = el("path", { d: stadium(R), pathLength: "400", style: "fill:none;stroke:var(--lime);stroke-width:3.2;stroke-linecap:round;stroke-dasharray:0 400" });
+  const halo = el("circle", { r: 7, filter: "url(#glow)", style: "fill:var(--lime);opacity:.55" });
+  const dot = el("circle", { r: 4.2, style: "fill:var(--lime);stroke:var(--bg);stroke-width:1.6" });
+
+  // Centre readout
+  const tTime = el("text", { x: CX, y: CY + 4, "text-anchor": "middle", class: "t-time" });
+  el("text", { x: CX, y: CY + 20, "text-anchor": "middle", class: "t-cap" }).textContent = "PER 400M LAP";
+
+  let lapSec = 90, start = performance.now(), lastLap = 0;
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function setLap(sec) {
+    if (!sec || !isFinite(sec)) return;
+    lapSec = sec;
+    tTime.textContent = mmss(sec);
+    start = performance.now(); lastLap = 0; $("lap-count").textContent = "1";
+    if (reduce) place(1);
+    else if (!running) { running = true; requestAnimationFrame(tick); }
+  }
+  function place(frac) {
+    const p = lane.getPointAtLength(total * frac);
+    dot.setAttribute("cx", p.x); dot.setAttribute("cy", p.y);
+    halo.setAttribute("cx", p.x); halo.setAttribute("cy", p.y);
+    trail.style.strokeDasharray = (frac * 400).toFixed(2) + " 400";
+  }
+  function tick(now) {
+    const loop = lapSec / 10 * 1000; // 10× speed
+    const t = (now - start) / loop;
+    // One lap only: stop at the finish line with the full lap drawn
+    if (t >= 1) { place(0.99999); running = false; return; }
+    place(t);
+    requestAnimationFrame(tick);
+  }
+  let running = false;
+  place(0);
+
+  const syncTrack = () => { const r = state[state.mode].result; if (r) setLap(r.split); };
+  const _render = renderResult;
+  const trackWrap = $("track-wrap");
+  renderResult = function () {
+    _render();
+    const res = $("result");
+    if (state[state.mode].result) res.insertBefore(trackWrap, res.querySelector(".lap"));
+    else trackWrap.remove();
+    syncTrack();
+  };
+  renderResult();
+  syncTrack();
+
+  // Keep the 390 × 844 screen at true size; shrink the whole device only when the window is smaller
+  const phone = document.querySelector(".phone");
+  function fit() {
+    const w = document.documentElement.clientWidth - 32;
+    const h = window.innerHeight - 64;
+    const s = Math.min(1, w / 414, h / 868);
+    phone.style.zoom = s < 1 ? s.toFixed(3) : "";
+  }
+  fit();
+  window.addEventListener("resize", fit);
+})();
+</script>
